@@ -3,231 +3,418 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SCHEDULE FIREWORKS - PSYCHOSIS</title>
+    <title>SCHEDULE FIREWORKS - THE ASCENSION</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@700&display=swap');
 
         :root {
-            --blood: #400000;
-            --active-red: #ff0000;
-            --bg: #020202;
+            --blood: #800;
+            --red: #ff0000;
+            --blue: #0088ff;
+            --bg: #000;
+            --gold: #d4af37;
         }
+
+        * { box-sizing: border-box; cursor: none; outline: none; }
 
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
-            background-color: var(--bg); color: #444;
+            background: var(--bg); color: #444;
             font-family: 'Courier Prime', monospace; overflow: hidden;
-            display: flex; align-items: center; justify-content: center;
         }
 
-        /* --- CRT & NOISE --- */
-        .crt::before {
-            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), 
-                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
-            z-index: 1000; pointer-events: none; background-size: 100% 3px, 3px 100%;
-        }
-
-        /* --- SCREENS --- */
-        .screen {
-            display: none; flex-direction: column; align-items: center;
-            justify-content: center; text-align: center; position: absolute;
-            width: 100%; height: 100%; z-index: 10;
-        }
-        .active { display: flex; }
-
-        /* --- LOBBY DESIGN --- */
-        .lighter-img { width: 320px; filter: brightness(0.4) contrast(1.8) sepia(0.2); transform: rotate(5deg); }
-        .flame {
-            position: absolute; top: -65px; left: 55%; transform: translateX(-50%);
-            width: 25px; height: 130px; opacity: 0;
-            background: linear-gradient(to bottom, #fff, #0088ff, transparent);
-            filter: blur(4px); box-shadow: 0 0 50px #0055ff;
-        }
-        .flame.active { opacity: 1; animation: flick 0.05s infinite; }
-
-        /* --- GAME ELEMENTS --- */
-        .slot-container { display: flex; gap: 30px; margin-top: 40px; opacity: 0; transition: 4s; }
-        .slot {
-            width: 150px; height: 210px; border: 1px solid #151515;
-            background: rgba(5, 5, 5, 0.95); display: flex; align-items: center; justify-content: center;
-            transition: 0.2s;
-        }
-        .slot.drag-over { border-color: var(--active-red); background: #0a0000; }
-
-        .card { 
-            width: 135px; height: 195px; background: #bbb; border-radius: 4px; 
-            color: #000; cursor: grab; display: flex; align-items: center; 
-            justify-content: center; font-weight: bold; border: 1px solid #444;
-            box-shadow: 0 0 15px rgba(0,0,0,0.5);
-        }
-
-        /* --- SURGEON FLASHES --- */
-        #surgeon {
+        /* --- CRT & OVERLAYS --- */
+        .crt-layer {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://picflow.media/images/17de2a33-375d-400e-80be-c750d05567b8/base/17de2a33-375d-400e-80be-c750d05567b8.webp') center center no-repeat;
-            background-size: cover; filter: brightness(0.2) contrast(3) grayscale(1);
-            opacity: 0; z-index: 500; pointer-events: none;
+            z-index: 9999; pointer-events: none;
+            background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.95) 100%),
+                        linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%);
+            background-size: 100% 100%, 100% 4px;
         }
 
-        #flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; z-index: 2000; pointer-events: none; }
-        
-        /* --- SHAKE EFFECTS --- */
-        .shake-heavy { animation: shakeH 0.05s infinite; }
-        @keyframes shakeH { 0% { transform: translate(5px, 5px); } 50% { transform: translate(-5px, -5px); } 100% { transform: translate(0,0); } }
+        #flash {
+            position: fixed; top:0; left:0; width:100%; height:100%;
+            background:#fff; opacity:0; z-index:9500; pointer-events:none;
+        }
 
-        .btn { background: transparent; border: 1px solid #222; color: #333; padding: 12px 35px; font-size: 1rem; cursor: pointer; letter-spacing: 5px; margin: 10px; transition: 0.2s; }
-        .btn:hover { color: #fff; border-color: var(--blood); background: #0a0000; }
+        #cursor {
+            position: fixed; width: 12px; height: 12px; background: var(--red);
+            border-radius: 50%; pointer-events: none; z-index: 10001;
+            transform: translate(-50%, -50%); box-shadow: 0 0 15px var(--red);
+        }
+
+        /* --- SCREEN SYSTEM --- */
+        .screen {
+            display: none; position: absolute; width: 100%; height: 100%;
+            flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; transition: opacity 1s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 100;
+        }
+        .active { display: flex; opacity: 1; }
+
+        /* --- UI ELEMENTS --- */
+        .btn {
+            background: #080808; border: 1px solid #333; color: #666;
+            padding: 18px 45px; font-size: 1.2rem; cursor: pointer;
+            letter-spacing: 5px; margin: 15px; transition: 0.4s ease;
+            position: relative; overflow: hidden;
+        }
+        .btn:hover:not(:disabled) {
+            color: #fff; border-color: var(--red);
+            box-shadow: 0 0 30px var(--blood); transform: scale(1.05);
+        }
+        .btn:disabled { opacity: 0.1; cursor: not-allowed; border-color: #111; }
+
+        /* --- INTRO LIVE CARD (NEW) --- */
+        #intro-card-screen {
+            background: var(--bg);
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; align-items: center; justify-content: center;
+            z-index: 2000;
+        }
+        #intro-live-card {
+            width: 100vw; height: 100vh;
+            background: url('https://picflow.media/images/d28f0859-a6df-4f17-be40-14f61cbd96c6/base/d28f0859-a6df-4f17-be40-14f61cbd96c6.webp') center no-repeat;
+            background-size: cover;
+            transform: scale(0.1);
+            opacity: 0;
+            transition: transform 3s ease-out, opacity 2s ease-out;
+        }
+        #intro-live-card.zoom-in {
+            transform: scale(1);
+            opacity: 1;
+        }
+        #intro-live-card.zoom-out {
+            transform: scale(0.1);
+            opacity: 0;
+        }
+
+
+        /* --- VOID DESIGN --- */
+        #live-card {
+            width: 200px; height: 300px;
+            background: url('https://picflow.media/images/d28f0859-a6df-4f17-be40-14f61cbd96c6/base/d28f0859-a6df-4f17-be40-14f61cbd96c6.webp') center;
+            background-size: cover; border-radius: 8px; box-shadow: 0 0 60px #000;
+            cursor: grab; border: 1px solid #1a1a1a; margin-bottom: 50px;
+            transition: 0.3s;
+        }
+        #live-card:active { cursor: grabbing; transform: scale(0.98); }
+
+        .slot-row { display: flex; gap: 30px; }
+        .slot {
+            width: 220px; height: 320px; border: 2px dashed #111;
+            display: flex; align-items: center; justify-content: center;
+            color: #050505; font-size: 0.8rem; transition: 0.4s;
+        }
+        .slot.drag-over { border-color: var(--red); background: rgba(30,0,0,0.1); color: #444; }
+
+        /* --- DEALER ROOM DESIGN (TOP) --- */
+        #dealer-arena {
+            position: relative; width: 100%; height: 100%;
+            display: flex; justify-content: center; overflow: hidden;
+        }
+        #dealer-head {
+            position: absolute; top: 3%; width: 580px; z-index: 10;
+            filter: brightness(0.85) drop-shadow(0 0 100px #000);
+        }
+        .dealer-hand {
+            position: absolute; width: 500px; z-index: 20;
+            filter: brightness(0.3) drop-shadow(0 0 50px #000);
+            transition: transform 0.1s ease-out;
+        }
+        #h-left { left: 12%; top: 8%; transform: rotate(28deg); }
+        #h-right { right: 12%; top: 8%; transform: rotate(-28deg) scaleX(-1); }
+
+        #game-table {
+            position: absolute; bottom: -5%; width: 110%; height: 55%;
+            background: url('https://picflow.media/images/8c83cd6a-1f93-4f86-9e34-506c0f0a8cbd/base/8c83cd6a-1f93-4f86-9e34-506c0f0a8cbd.webp') center bottom no-repeat;
+            background-size: cover; z-index: 5;
+            filter: brightness(0.4) contrast(1.6) sepia(0.1);
+            border-top: 2px solid #111;
+        }
+
+        /* --- DIALOG & BETTING --- */
+        .dialog-system {
+            position: absolute; bottom: 8%; background: rgba(2,2,2,0.98);
+            border: 1px solid #1a1a1a; padding: 35px; width: 65%;
+            text-align: center; z-index: 500; box-shadow: 0 0 80px #000;
+        }
+        #coin-box {
+            background: #000; border: 1px solid #444; color: var(--gold);
+            font-family: 'Courier Prime'; font-size: 1.8rem; width: 120px;
+            text-align: center; margin: 15px; padding: 5px;
+        }
+        #text-content { font-size: 1.6rem; color: #fff; min-height: 50px; text-shadow: 0 0 10px var(--red); }
+
+        /* --- PSYCHO VISUALS --- */
+        #event-eyes {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://picflow.media/images/2594c0ac-9eab-441b-be67-077fc277b7fd/base/2594c0ac-9eab-441b-be67-077fc277b7fd.webp') center no-repeat;
+            background-size: cover; display: none; z-index: 8000; filter: brightness(0.7);
+        }
+        .psy-digit {
+            position: absolute; color: var(--red); font-size: 9rem;
+            font-weight: bold; z-index: 8500; pointer-events: none;
+            animation: jitter 0.1s infinite;
+        }
+        @keyframes jitter {
+            0% { transform: translate(0,0); }
+            50% { transform: translate(5px, -5px); }
+            100% { transform: translate(-5px, 5px); }
+        }
+        #heaven-overlay {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            color: #fff; font-size: 4.5rem; text-align: center; display: none;
+            z-index: 8600; letter-spacing: 25px; text-shadow: 0 0 40px #fff;
+        }
     </style>
 </head>
 <body class="crt">
+    <div id="cursor"></div>
+    <div class="crt-layer"></div>
     <div id="flash"></div>
-    <div id="surgeon"></div>
+    <div id="event-eyes"></div>
+    <div id="heaven-overlay">YOU BELONG TO HEAVEN</div>
 
-    <audio id="lobby-music" loop><source src="lobbymp.mp3" type="audio/mpeg"></audio>
-    <audio id="sfx-click" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
-    <audio id="sfx-flashbang" src="https://assets.mixkit.co/active_storage/sfx/2800/2800-preview.mp3"></audio>
-    <audio id="sfx-tinnitus" loop src="https://www.soundjay.com/button/sounds/beep-01a.mp3"></audio>
-    <audio id="sfx-type" src="https://www.soundjay.com/communication/typewriter-key-1.mp3"></audio>
-    <audio id="sfx-shock" src="https://assets.mixkit.co/active_storage/sfx/1083/1083-preview.mp3"></audio>
-    <audio id="sfx-ignite" src="https://www.soundjay.com/button/sounds/button-29.mp3"></audio>
+    <div id="intro-card-screen" style="opacity:1;">
+        <div id="intro-live-card"></div>
+    </div>
+    <audio id="m-lobby" loop src="lobbymp.mp3"></audio>
+    <audio id="m-dealer" loop src="betdealmp.mp3"></audio>
+    <audio id="m-belong" src="belongmp.mp3"></audio>
+    <audio id="s-type" src="https://www.soundjay.com/communication/typewriter-key-1.mp3"></audio>
+    <audio id="s-shot" src="https://assets.mixkit.co/active_storage/sfx/1695/1695-preview.mp3"></audio>
+    <audio id="s-flash" src="https://assets.mixkit.co/active_storage/sfx/2800/2800-preview.mp3"></audio>
+    <audio id="s-heart" loop src="https://assets.mixkit.co/active_storage/sfx/1083/1083-preview.mp3"></audio>
 
-    <div id="screen-lang" class="screen active">
-        <div style="font-size: 0.6rem; margin-bottom: 20px;">[ SELECTING_DRIVER... ]</div>
-        <button class="btn" onclick="setLang('DE')">DEUTSCH</button>
-        <button class="btn" onclick="setLang('EN')">ENGLISH</button>
+    <div id="sc-warn" class="screen">
+        <div style="border: 2px solid var(--red); padding: 60px; text-align: center; background: rgba(10,0,0,0.5);">
+            <h1 style="color:var(--red); font-size: 3rem; margin-top:0;">WARNING</h1>
+            <p style="font-size: 1.2rem; margin-bottom: 30px;">EPILEPSY & PSYCHOLOGICAL HORROR EXPERIENCE</p>
+            <button class="btn" onclick="initialize()">I UNDERSTAND</button>
+        </div>
     </div>
 
-    <div id="screen-menu" class="screen">
-        <div id="lighter-box" style="position:relative;" onmousedown="ignite(true)" onmouseup="ignite(false)">
-            <div id="jet-flame" class="flame"></div>
-            <img class="lighter-img" src="https://picflow.media/images/17de2a33-375d-400e-80be-c750d05567b8/base/17de2a33-375d-400e-80be-c750d05567b8.webp">
+    <div id="sc-lang" class="screen">
+        <h2 style="letter-spacing: 15px; color: #111; margin-bottom: 40px;">// IDENTITY_SELECT</h2>
+        <div style="display:flex; gap:30px;">
+            <button class="btn" onclick="setLocale('DE')">DEUTSCH</button>
+            <button class="btn" onclick="setLocale('EN')">ENGLISH</button>
         </div>
-        <div style="font-size: 3.5rem; color: var(--blood); letter-spacing: 12px; margin: 30px 0;">SCHEDULE FIREWORKS</div>
-        <button id="btn-in" class="btn" onclick="triggerFlashbang()"></button>
     </div>
 
-    <div id="screen-game" class="screen">
-        <div id="text-box" style="height: 60px; font-size: 1.8rem; color: #222; margin-bottom: 30px;"></div>
-        <div id="card-wrap" style="opacity:0; transition:2s; height: 220px; display:flex; align-items:center;">
-            <div id="live-card" class="card" draggable="true" ondragstart="drag(event)">LIVE</div>
+    <div id="sc-void" class="screen">
+        <div id="live-card" draggable="true" ondragstart="e => e.dataTransfer.setData('text', 'card')"></div>
+        <div class="slot-row">
+            <div class="slot" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">[ SLOT_01 ]</div>
+            <div class="slot" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">[ SLOT_02 ]</div>
+            <div class="slot" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">[ SLOT_03 ]</div>
         </div>
-        <div id="slot-wrap" class="slot-container">
-            <div class="slot" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-            <div class="slot" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
-            <div class="slot" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+    </div>
+
+    <div id="sc-dealer" class="screen">
+        <div id="dealer-arena">
+            <img id="dealer-head" src="https://picflow.media/images/11d9f2c8-7a91-46d3-9935-9bd6faf53611/base/11d9f2c8-7a91-46d3-9935-9bd6faf53611.webp">
+            <img id="h-left" class="dealer-hand" src="https://picflow.media/images/38541e59-7718-4281-b96a-856e65570533/base/38541e59-7718-4281-b96a-856e65570533.webp">
+            <img id="h-right" class="dealer-hand" src="https://picflow.media/images/38541e59-7718-4281-b96a-856e65570533/base/38541e59-7718-4281-b96a-856e65570533.webp">
+        </div>
+        <div id="game-table"></div>
+        <div class="dialog-system" id="ui-main" style="display:none;">
+            <div id="text-content"></div>
+            
+            <div id="ui-input-zone" style="display:none; margin-top:20px;">
+                <input type="number" id="coin-box" value="10" min="1" max="50">
+                <button class="btn" onclick="confirmBet()">PLACE BET</button>
+                <button id="full-house" class="btn" disabled onclick="executeWinner()">FULL HOUSE</button>
+            </div>
+
+            <div id="ui-color-zone" style="display:none; margin-top:20px;">
+                <button class="btn" style="color:var(--red);" onclick="triggerPsycho()">RED (DEATH)</button>
+                <button class="btn" style="color:var(--blue);" onclick="resetToBetting()">BLUE</button>
+            </div>
         </div>
     </div>
 
     <script>
-        let L = 'EN';
-        const dict = {
-            'DE': { in: "> EINLEGEN", worth: "was it worth", wake: "wach auf...", doctor: "Ich denke, er ist wach..." },
-            'EN': { in: "> INSERT", worth: "was it worth", wake: "wake up...", doctor: "I think he is awake..." }
+        let LOCALE = 'EN', isAscended = false;
+        const STRINGS = {
+            'DE': { hi: "Willkommen. 50 Coins gutgeschrieben. Dein Einsatz?", bet: "Farbe wählen. Rot bedeutet das Ende." },
+            'EN': { hi: "Welcome. 50 coins credited. Your bet?", bet: "Choose color. Red means the end." }
         };
 
-        function setLang(sel) {
-            L = sel;
-            document.getElementById('btn-in').innerText = dict[L].in;
-            document.getElementById('screen-lang').classList.remove('active');
-            document.getElementById('screen-menu').classList.add('active');
-            const m = document.getElementById('lobby-music');
-            m.volume = 0.3; m.play();
-        }
+        // Cursor Logic
+        document.addEventListener('mousemove', e => {
+            const c = document.getElementById('cursor');
+            c.style.left = e.clientX + 'px';
+            c.style.top = e.clientY + 'px';
+        });
 
-        function ignite(s) {
-            const f = document.getElementById('jet-flame');
-            const snd = document.getElementById('sfx-ignite');
-            if(s) { f.classList.add('active'); snd.play(); }
-            else { f.classList.remove('active'); snd.pause(); }
-        }
-
-        function triggerFlashbang() {
-            // Flashbang Sequenz
-            const flash = document.getElementById('flash');
-            flash.style.opacity = "1";
-            document.getElementById('sfx-flashbang').play();
+        // --- INTRO SEQUENCE (NEW) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            requestFullscreen(); // Request fullscreen immediately
+            const introCard = document.getElementById('intro-live-card');
             
-            const tin = document.getElementById('sfx-tinnitus');
-            tin.volume = 0.6; tin.play();
-
-            document.getElementById('lobby-music').pause();
-            document.getElementById('screen-menu').classList.remove('active');
-            document.getElementById('screen-game').classList.add('active');
-
-            // Flash & Tinnitus langsam ausfaden
             setTimeout(() => {
-                flash.style.transition = "opacity 5s"; flash.style.opacity = "0";
-                let fade = setInterval(() => {
-                    if(tin.volume > 0.02) tin.volume -= 0.02;
-                    else { tin.pause(); clearInterval(fade); }
-                }, 200);
-            }, 1000);
+                introCard.classList.add('zoom-in'); // Start zoom in
+            }, 500); // Small delay before zooming in
 
             setTimeout(() => {
-                type(dict[L].worth, () => {
-                    setTimeout(() => {
-                        document.getElementById('text-box').innerHTML = "";
-                        type(dict[L].wake, () => {
-                            document.getElementById('slot-wrap').style.opacity = "1";
-                            document.getElementById('card-wrap').style.opacity = "1";
-                        });
-                    }, 1200);
-                });
-            }, 4000);
+                introCard.classList.remove('zoom-in');
+                introCard.classList.add('zoom-out'); // Start zoom out
+            }, 3500); // Hold for 3s then start zoom out
+
+            setTimeout(() => {
+                document.getElementById('intro-card-screen').style.display = 'none'; // Hide intro screen
+                switchScreen('sc-warn'); // Show the warning screen
+            }, 5000); // After zoom out, display warning
+        });
+        // -----------------------------
+
+        function requestFullscreen() {
+            let de = document.documentElement;
+            if(de.requestFullscreen) de.requestFullscreen();
         }
 
-        function type(t, c, i = 0, speed = 120) {
-            if (i < t.length) {
-                document.getElementById('text-box').innerHTML += t.charAt(i);
-                document.getElementById('sfx-type').currentTime = 0; document.getElementById('sfx-type').play();
-                setTimeout(() => type(t, c, i + 1, speed), speed);
-            } else if (c) setTimeout(c, 800);
+        function initialize() {
+            switchScreen('sc-lang');
         }
 
-        function drag(e) { e.dataTransfer.setData("text", e.target.id); }
-        function allowDrop(e) { e.preventDefault(); }
-        function drop(e) {
+        function switchScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+        }
+
+        function setLocale(l) {
+            LOCALE = l;
+            document.getElementById('m-lobby').volume = 0.4;
+            document.getElementById('m-lobby').play();
+            switchScreen('sc-void');
+        }
+
+        // Drag & Drop
+        function handleDragOver(e) { e.preventDefault(); e.target.classList.add('drag-over'); }
+        function handleDragLeave(e) { e.target.classList.remove('drag-over'); }
+        function handleDrop(e) {
             e.preventDefault();
-            if(e.target.classList.contains('slot')) {
-                const id = e.dataTransfer.getData("text");
-                e.target.appendChild(document.getElementById(id));
-                document.getElementById('sfx-click').play();
-                startSurgeonSequence();
-            }
+            document.getElementById('m-lobby').pause();
+            playFlash(() => {
+                switchScreen('sc-dealer');
+                document.getElementById('m-dealer').volume = 0.5;
+                document.getElementById('m-dealer').play();
+                setTimeout(initDealerRoom, 2000);
+            });
         }
 
-        function startSurgeonSequence() {
-            document.getElementById('text-box').innerHTML = "";
-            document.getElementById('card-wrap').style.opacity = "0";
-            
-            // Psychotische Schock-Blitze
-            let flashes = 0;
-            let interval = setInterval(() => {
-                document.getElementById('surgeon').style.opacity = Math.random() * 0.4;
-                document.getElementById('flash').style.opacity = Math.random() * 0.2;
-                document.getElementById('sfx-shock').currentTime = 0; document.getElementById('sfx-shock').play();
-                flashes++;
-                if(flashes > 10) {
-                    clearInterval(interval);
-                    document.getElementById('surgeon').style.opacity = "0.2";
-                    document.getElementById('flash').style.opacity = "0";
-                    
-                    // Der Arzt spricht
-                    type(dict[L].doctor, () => {
-                        setTimeout(() => {
-                            document.body.classList.add('shake-heavy');
-                            document.getElementById('flash').style.transition = "none";
-                            document.getElementById('flash').style.opacity = "1";
-                            document.getElementById('sfx-flashbang').play();
-                            setTimeout(() => {
-                                document.body.innerHTML = "<div style='color:#111; font-size:0.7rem;'>CRITICAL_SYSTEM_FAILURE...</div>";
-                            }, 1500);
-                        }, 1000);
-                    }, 0, 200);
-                }
-            }, 100);
+        function playFlash(cb) {
+            const f = document.getElementById('flash');
+            f.style.opacity = "1";
+            document.getElementById('s-flash').play();
+            setTimeout(() => {
+                f.style.transition = "opacity 3s ease";
+                f.style.opacity = "0";
+                if(cb) cb();
+            }, 300);
         }
+
+        function initDealerRoom() {
+            document.getElementById('ui-main').style.display = "block";
+            typeText('text-content', STRINGS[LOCALE].hi, () => {
+                document.getElementById('ui-input-zone').style.display = "block";
+            });
+        }
+
+        function typeText(id, t, cb) {
+            let el = document.getElementById(id), i = 0;
+            el.innerHTML = "";
+            let timer = setInterval(() => {
+                if(i < t.length) {
+                    el.innerHTML += t.charAt(i);
+                    document.getElementById('s-type').currentTime=0;
+                    document.getElementById('s-type').play();
+                    i++;
+                } else {
+                    clearInterval(timer);
+                    if(cb) cb();
+                }
+            }, 60);
+        }
+
+        function confirmBet() {
+            document.getElementById('ui-input-zone').style.display = "none";
+            typeText('text-content', STRINGS[LOCALE].bet, () => {
+                document.getElementById('ui-color-zone').style.display = "flex";
+                document.getElementById('ui-color-zone').style.justifyContent = "center";
+            });
+        }
+
+        function triggerPsycho() {
+            document.getElementById('ui-color-zone').style.display = "none";
+            document.getElementById('s-heart').play();
+            
+            for(let i=0; i<35; i++) {
+                setTimeout(() => {
+                    let s = document.createElement('div');
+                    s.className = 'psy-digit'; s.innerHTML = '6';
+                    s.style.left = Math.random()*90 + '%';
+                    s.style.top = Math.random()*90 + '%';
+                    document.body.appendChild(s);
+                }, i * 120);
+            }
+
+            setTimeout(() => {
+                document.getElementById('event-eyes').style.display = "block";
+                document.getElementById('m-belong').play();
+                document.getElementById('heaven-overlay').style.display = "block";
+                
+                setTimeout(() => {
+                    playFlash(() => {
+                        document.getElementById('event-eyes').style.display = "none";
+                        document.getElementById('heaven-overlay').style.display = "none";
+                        document.querySelectorAll('.psy-digit').forEach(e => e.remove());
+                        document.getElementById('s-heart').pause();
+                        isAscended = true;
+                        document.getElementById('full-house').disabled = false;
+                        resetToBetting();
+                    });
+                }, 6000);
+            }, 4500);
+        }
+
+        function resetToBetting() {
+            document.getElementById('ui-color-zone').style.display = "none";
+            document.getElementById('ui-input-zone').style.display = "block";
+            typeText('text-content', "YOU ARE DIFFERENT NOW.", null);
+        }
+
+        function executeWinner() {
+            document.getElementById('ui-input-zone').style.display = "none";
+            typeText('text-content', "FULL HOUSE. THE END OF THE LINE.", () => {
+                setTimeout(() => {
+                    document.getElementById('s-shot').play();
+                    playFlash(() => {
+                        document.getElementById('dealer-head').style.display = "none";
+                        document.querySelectorAll('.dealer-hand').forEach(h => h.style.display="none");
+                        setTimeout(() => {
+                            document.body.innerHTML = "<div style='color:#fff; height:100vh; display:flex; align-items:center; justify-content:center; letter-spacing:20px; font-size:3rem; text-shadow:0 0 30px #f00;'>SESSION TERMINATED</div>";
+                        }, 4000);
+                    });
+                }, 2000);
+            });
+        }
+
+        // --- RENDER LOOP ---
+        let delta = 0;
+        function coreLoop() {
+            delta += 0.02;
+            const head = document.getElementById('dealer-head');
+            if(head && document.getElementById('sc-dealer').classList.contains('active')) {
+                head.style.transform = `translateY(${Math.sin(delta)*18}px) rotate(${Math.cos(delta*0.4)*2.5}deg)`;
+                document.getElementById('h-left').style.transform = `translateY(${Math.sin(delta*1.2)*12}px) rotate(${28 + Math.sin(delta)*4}deg)`;
+                document.getElementById('h-right').style.transform = `translateY(${Math.sin(delta*1.2)*12}px) rotate(${-28 - Math.sin(delta)*4}deg) scaleX(-1)`;
+            }
+            requestAnimationFrame(coreLoop);
+        }
+        coreLoop();
     </script>
 </body>
 </html>
