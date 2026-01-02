@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SCHEDULE FIREWORKS - PSYCHOSIS</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Courier+Prime:wght@700&display=swap');
+
+        :root {
+            --blood: #400000;
+            --active-red: #ff0000;
+            --bg: #020202;
+        }
+
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg); color: #444;
+            font-family: 'Courier Prime', monospace; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
+        }
+
+        /* --- CRT & NOISE --- */
+        .crt::before {
+            content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%), 
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 1000; pointer-events: none; background-size: 100% 3px, 3px 100%;
+        }
+
+        /* --- SCREENS --- */
+        .screen {
+            display: none; flex-direction: column; align-items: center;
+            justify-content: center; text-align: center; position: absolute;
+            width: 100%; height: 100%; z-index: 10;
+        }
+        .active { display: flex; }
+
+        /* --- LOBBY DESIGN --- */
+        .lighter-img { width: 320px; filter: brightness(0.4) contrast(1.8) sepia(0.2); transform: rotate(5deg); }
+        .flame {
+            position: absolute; top: -65px; left: 55%; transform: translateX(-50%);
+            width: 25px; height: 130px; opacity: 0;
+            background: linear-gradient(to bottom, #fff, #0088ff, transparent);
+            filter: blur(4px); box-shadow: 0 0 50px #0055ff;
+        }
+        .flame.active { opacity: 1; animation: flick 0.05s infinite; }
+
+        /* --- GAME ELEMENTS --- */
+        .slot-container { display: flex; gap: 30px; margin-top: 40px; opacity: 0; transition: 4s; }
+        .slot {
+            width: 150px; height: 210px; border: 1px solid #151515;
+            background: rgba(5, 5, 5, 0.95); display: flex; align-items: center; justify-content: center;
+            transition: 0.2s;
+        }
+        .slot.drag-over { border-color: var(--active-red); background: #0a0000; }
+
+        .card { 
+            width: 135px; height: 195px; background: #bbb; border-radius: 4px; 
+            color: #000; cursor: grab; display: flex; align-items: center; 
+            justify-content: center; font-weight: bold; border: 1px solid #444;
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        /* --- SURGEON FLASHES --- */
+        #surgeon {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://picflow.media/images/17de2a33-375d-400e-80be-c750d05567b8/base/17de2a33-375d-400e-80be-c750d05567b8.webp') center center no-repeat;
+            background-size: cover; filter: brightness(0.2) contrast(3) grayscale(1);
+            opacity: 0; z-index: 500; pointer-events: none;
+        }
+
+        #flash { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #fff; opacity: 0; z-index: 2000; pointer-events: none; }
+        
+        /* --- SHAKE EFFECTS --- */
+        .shake-heavy { animation: shakeH 0.05s infinite; }
+        @keyframes shakeH { 0% { transform: translate(5px, 5px); } 50% { transform: translate(-5px, -5px); } 100% { transform: translate(0,0); } }
+
+        .btn { background: transparent; border: 1px solid #222; color: #333; padding: 12px 35px; font-size: 1rem; cursor: pointer; letter-spacing: 5px; margin: 10px; transition: 0.2s; }
+        .btn:hover { color: #fff; border-color: var(--blood); background: #0a0000; }
+    </style>
+</head>
+<body class="crt">
+    <div id="flash"></div>
+    <div id="surgeon"></div>
+
+    <audio id="lobby-music" loop><source src="lobbymp.mp3" type="audio/mpeg"></audio>
+    <audio id="sfx-click" src="https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3"></audio>
+    <audio id="sfx-flashbang" src="https://assets.mixkit.co/active_storage/sfx/2800/2800-preview.mp3"></audio>
+    <audio id="sfx-tinnitus" loop src="https://www.soundjay.com/button/sounds/beep-01a.mp3"></audio>
+    <audio id="sfx-type" src="https://www.soundjay.com/communication/typewriter-key-1.mp3"></audio>
+    <audio id="sfx-shock" src="https://assets.mixkit.co/active_storage/sfx/1083/1083-preview.mp3"></audio>
+    <audio id="sfx-ignite" src="https://www.soundjay.com/button/sounds/button-29.mp3"></audio>
+
+    <div id="screen-lang" class="screen active">
+        <div style="font-size: 0.6rem; margin-bottom: 20px;">[ SELECTING_DRIVER... ]</div>
+        <button class="btn" onclick="setLang('DE')">DEUTSCH</button>
+        <button class="btn" onclick="setLang('EN')">ENGLISH</button>
+    </div>
+
+    <div id="screen-menu" class="screen">
+        <div id="lighter-box" style="position:relative;" onmousedown="ignite(true)" onmouseup="ignite(false)">
+            <div id="jet-flame" class="flame"></div>
+            <img class="lighter-img" src="https://picflow.media/images/17de2a33-375d-400e-80be-c750d05567b8/base/17de2a33-375d-400e-80be-c750d05567b8.webp">
+        </div>
+        <div style="font-size: 3.5rem; color: var(--blood); letter-spacing: 12px; margin: 30px 0;">SCHEDULE FIREWORKS</div>
+        <button id="btn-in" class="btn" onclick="triggerFlashbang()"></button>
+    </div>
+
+    <div id="screen-game" class="screen">
+        <div id="text-box" style="height: 60px; font-size: 1.8rem; color: #222; margin-bottom: 30px;"></div>
+        <div id="card-wrap" style="opacity:0; transition:2s; height: 220px; display:flex; align-items:center;">
+            <div id="live-card" class="card" draggable="true" ondragstart="drag(event)">LIVE</div>
+        </div>
+        <div id="slot-wrap" class="slot-container">
+            <div class="slot" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            <div class="slot" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+            <div class="slot" ondrop="drop(event)" ondragover="allowDrop(event)"></div>
+        </div>
+    </div>
+
+    <script>
+        let L = 'EN';
+        const dict = {
+            'DE': { in: "> EINLEGEN", worth: "was it worth", wake: "wach auf...", doctor: "Ich denke, er ist wach..." },
+            'EN': { in: "> INSERT", worth: "was it worth", wake: "wake up...", doctor: "I think he is awake..." }
+        };
+
+        function setLang(sel) {
+            L = sel;
+            document.getElementById('btn-in').innerText = dict[L].in;
+            document.getElementById('screen-lang').classList.remove('active');
+            document.getElementById('screen-menu').classList.add('active');
+            const m = document.getElementById('lobby-music');
+            m.volume = 0.3; m.play();
+        }
+
+        function ignite(s) {
+            const f = document.getElementById('jet-flame');
+            const snd = document.getElementById('sfx-ignite');
+            if(s) { f.classList.add('active'); snd.play(); }
+            else { f.classList.remove('active'); snd.pause(); }
+        }
+
+        function triggerFlashbang() {
+            // Flashbang Sequenz
+            const flash = document.getElementById('flash');
+            flash.style.opacity = "1";
+            document.getElementById('sfx-flashbang').play();
+            
+            const tin = document.getElementById('sfx-tinnitus');
+            tin.volume = 0.6; tin.play();
+
+            document.getElementById('lobby-music').pause();
+            document.getElementById('screen-menu').classList.remove('active');
+            document.getElementById('screen-game').classList.add('active');
+
+            // Flash & Tinnitus langsam ausfaden
+            setTimeout(() => {
+                flash.style.transition = "opacity 5s"; flash.style.opacity = "0";
+                let fade = setInterval(() => {
+                    if(tin.volume > 0.02) tin.volume -= 0.02;
+                    else { tin.pause(); clearInterval(fade); }
+                }, 200);
+            }, 1000);
+
+            setTimeout(() => {
+                type(dict[L].worth, () => {
+                    setTimeout(() => {
+                        document.getElementById('text-box').innerHTML = "";
+                        type(dict[L].wake, () => {
+                            document.getElementById('slot-wrap').style.opacity = "1";
+                            document.getElementById('card-wrap').style.opacity = "1";
+                        });
+                    }, 1200);
+                });
+            }, 4000);
+        }
+
+        function type(t, c, i = 0, speed = 120) {
+            if (i < t.length) {
+                document.getElementById('text-box').innerHTML += t.charAt(i);
+                document.getElementById('sfx-type').currentTime = 0; document.getElementById('sfx-type').play();
+                setTimeout(() => type(t, c, i + 1, speed), speed);
+            } else if (c) setTimeout(c, 800);
+        }
+
+        function drag(e) { e.dataTransfer.setData("text", e.target.id); }
+        function allowDrop(e) { e.preventDefault(); }
+        function drop(e) {
+            e.preventDefault();
+            if(e.target.classList.contains('slot')) {
+                const id = e.dataTransfer.getData("text");
+                e.target.appendChild(document.getElementById(id));
+                document.getElementById('sfx-click').play();
+                startSurgeonSequence();
+            }
+        }
+
+        function startSurgeonSequence() {
+            document.getElementById('text-box').innerHTML = "";
+            document.getElementById('card-wrap').style.opacity = "0";
+            
+            // Psychotische Schock-Blitze
+            let flashes = 0;
+            let interval = setInterval(() => {
+                document.getElementById('surgeon').style.opacity = Math.random() * 0.4;
+                document.getElementById('flash').style.opacity = Math.random() * 0.2;
+                document.getElementById('sfx-shock').currentTime = 0; document.getElementById('sfx-shock').play();
+                flashes++;
+                if(flashes > 10) {
+                    clearInterval(interval);
+                    document.getElementById('surgeon').style.opacity = "0.2";
+                    document.getElementById('flash').style.opacity = "0";
+                    
+                    // Der Arzt spricht
+                    type(dict[L].doctor, () => {
+                        setTimeout(() => {
+                            document.body.classList.add('shake-heavy');
+                            document.getElementById('flash').style.transition = "none";
+                            document.getElementById('flash').style.opacity = "1";
+                            document.getElementById('sfx-flashbang').play();
+                            setTimeout(() => {
+                                document.body.innerHTML = "<div style='color:#111; font-size:0.7rem;'>CRITICAL_SYSTEM_FAILURE...</div>";
+                            }, 1500);
+                        }, 1000);
+                    }, 0, 200);
+                }
+            }, 100);
+        }
+    </script>
+</body>
+</html>
